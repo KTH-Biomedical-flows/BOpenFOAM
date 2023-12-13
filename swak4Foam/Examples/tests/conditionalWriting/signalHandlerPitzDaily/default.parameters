@@ -1,0 +1,34 @@
+// -*- c++ -*-
+
+endTime {
+    description "Ordinary end time of run";
+    default 1000;
+}
+timeToRaise {
+    description "At which time the signal should be raised";
+    default 37;
+}
+
+timeToFPE {
+    description "Time at which a FPE is raised by the turbulence";
+    default 40;
+}
+
+signalToRaise {
+    description "Which signal to raise";
+    default FoamFatal;
+    options (
+        FPE SEGV INT TERM QUIT USR1 USR2
+        FoamFatal
+    );
+}
+processorsToRaise {
+    description "List of processors that should raise the signal";
+    default (
+        1
+    );
+}
+sleepSeconds {
+    default 60;
+    description "Seconds to allow other processes to sleep before reraising the error";
+}

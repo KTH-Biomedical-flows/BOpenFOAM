@@ -1,0 +1,38 @@
+#! /bin/bash
+
+source ../rules/foamVersion
+
+for d in `ls | grep swak | grep FunctionPlugin`
+do
+    supported_version="yes"
+
+    if [[ "$d" == "swakLagrangianCloudSourcesFunctionPlugin" && "$OPENFOAM_ORG" != "" && $(( $OPENFOAM_ORG > 8)) ]];
+    then
+        supported_version="no"
+    fi
+
+    if [[ "$d" == "swakShiftFieldFunctionPlugin" && "$OPENFOAM_ORG" != "" && $(( $OPENFOAM_ORG > 9)) ]];
+    then
+        supported_version="no"
+    fi
+
+    if [[ "$supported_version" != "yes" ]];
+    then
+        echo "$d not supported for foundation release $OPENFOAM_ORG"
+    elif [ "$d" != "swakFacSchemesFunctionPlugin" ]
+    then
+	wmake libso $d
+    fi
+done
+
+if [[ "$FOAM_DEV" != "" || ( ${WM_PROJECT_VERSION:0:1} == "v" && ${WM_PROJECT_VERSION:1} -gt 1707 ) ]]
+then
+    wmake libso swakFacSchemesFunctionPlugin
+fi
+
+if [[ "$OPENFOAM_ORG" != "" && $(( $OPENFOAM_ORG > 8 )) ]];
+then
+    echo "lagrangianCloudAdaptors are not supported for foundation release $OPENFOAM_ORG"
+else
+    (cd lagrangianCloudAdaptors; ./Allwmake )
+fi

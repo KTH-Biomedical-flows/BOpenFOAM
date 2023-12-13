@@ -1,0 +1,58 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2306                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      decomposeParDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+numberOfSubdomains  |-numberOfProcessors-|;
+
+method  swak;
+
+swakCoeffs {
+    variables (
+        "center=sum(vol()*pos())/sum(vol());"
+    );
+<!--(if function=="random")-->
+    processorExpression "|-numberOfProcessors-|*rand(|-seed-|)";
+    mappingMethod |-mappingMethod-|;
+<!--(elif function=="halfRandom")-->
+    processorExpression "|-numberOfProcessors-|*(0.5*rand(|-seed-|) + 0.25)";
+    mappingMethod |-mappingMethod-|;
+<!--(elif function=="staggeredId")-->
+    processorExpression "id() % |-numberOfProcessors-|";
+    mappingMethod range;
+<!--(elif function=="fromCenter")-->
+    processorExpression "mag(pos()-center)";
+    mappingMethod quantile;
+<!--(elif function=="fromCenterWeighted")-->
+    processorExpression "mag(pos()-center)";
+    mappingMethod weightedquantile;
+    weightExpression "weightField";
+<!--(elif function=="fromWall")-->
+    processorExpression "weightField";
+    mappingMethod quantile;
+<!--(end)-->
+}
+
+// constraints
+// {
+//     faces
+//     {
+//         type    preserveFaceZones;
+//         //zones   (f1 f2 f3);
+//         zones (domain0_to_v_CPU domain0_to_v_fins v_CPU_to_v_fins);
+//         enabled true;
+//     }
+// }
+
+// ************************************************************************* //

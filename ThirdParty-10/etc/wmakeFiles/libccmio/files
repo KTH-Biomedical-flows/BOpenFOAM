@@ -1,0 +1,15 @@
+# NOTE: make any changes to this file in etc/wmakeFiles/
+
+adf = libadf
+$(adf)/ADF_fortran_2_c.c
+$(adf)/ADF_interface.c
+$(adf)/ADF_internals.c
+
+ccmio = libccmio
+$(ccmio)/ccmio.c
+$(ccmio)/ccmiocore.c
+$(ccmio)/ccmioprivate.c
+$(ccmio)/ccmioutility.c
+$(ccmio)/ccmioversion.c
+
+LIB = $(FOAM_EXT_LIBBIN)/libccmio

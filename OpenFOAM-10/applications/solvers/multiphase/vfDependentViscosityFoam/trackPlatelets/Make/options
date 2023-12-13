@@ -1,0 +1,29 @@
+EXE_INC = \
+    -I../transportModel/lnInclude \
+    -I../plateletLpt/lnInclude \
+    -I$(LIB_SRC)/twoPhaseModels/twoPhaseMixture/lnInclude \
+    -I$(LIB_SRC)/lagrangian/basic/lnInclude \
+    -I$(LIB_SRC)/lagrangian/parcel/lnInclude \
+    -I$(LIB_SRC)/lagrangian/distributionModels/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/momentumTransportModels/lnInclude \
+    -I$(LIB_SRC)/MomentumTransportModels/incompressible/lnInclude \
+    -I$(LIB_SRC)/twoPhaseModels/interfaceProperties/lnInclude \
+    -I$(LIB_SRC)/regionModels/regionModel/lnInclude \
+    -I$(LIB_SRC)/regionModels/surfaceFilmModels/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/meshTools/lnInclude \
+    -I$(LIB_SRC)/sampling/lnInclude \
+    -I$(LIB_SRC)/physicalProperties/lnInclude
+
+EXE_LIBS = \
+    -ltwoPhaseMixture \
+    -lmomentumTransportModels \
+    -lincompressibleMomentumTransportModels \
+    -lfiniteVolume \
+    -lfvModels \
+    -lmeshTools \
+    -lvfDependentTransportModel \
+    -lplateletLpt

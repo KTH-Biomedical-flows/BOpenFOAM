@@ -1,0 +1,19 @@
+#! /bin/bash
+
+if [ -e swakConfiguration ]; then
+    echo "Reading variables from 'swakConfiguration'"
+    source ./swakConfiguration
+fi
+
+(cd Libraries; ./Allwclean )
+
+(cd Utilities; ./Allwclean )
+
+# (cd Examples/tests/fluIntegration/libRegistered; wclean)
+
+find . -name "*.dep" -print -exec rm {} \;
+
+find . -name compile_commands.json -print0 | xargs --null rm -f
+find . -name .clangd -print0 | xargs --null rm -rf
+
+rm -f foamVersionThisIsCompiledFor

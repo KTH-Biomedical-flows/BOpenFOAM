@@ -1,0 +1,15 @@
+#! /bin/bash
+
+rm -rf processor*
+
+funkySetFields -time 0 -field weightField -create -expression "1.1*max(dist())-dist()"
+
+decomposePar
+
+pyFoamRunner.py  --auto funkySetFields -create -field cpuNr -time 0: -expression "cpu()"
+
+<!--(if do_redistribute)-->
+pyFoamRunner.py  --auto funkySetFields -create -field cpuNr_old -latestTime -expression "cpu()"
+pyFoamRunner.py  --auto redistributePar -decomposeParDict system/decomposeParDict.redistribute
+pyFoamRunner.py  --auto funkySetFields -create -field cpuNr_new -latestTime -expression "cpu()"
+<!--(end)-->

@@ -1,0 +1,8 @@
+// -*- c++ -*-
+
+pressure {
+    theTitle "Pressure";
+    expr "Expression patchPressure on (.+):  weightedAverage=(.+)";
+    type dynamic;
+    idNr 1;
+}

@@ -1,0 +1,18 @@
+# cloud names
+#cloud/PlateletCloudName.C
+
+# clouds
+#cloud/plateletCloud.C
+
+
+# parcel names
+#parcel/PlateletParcelName.C
+
+
+parcel/PlateletParcelName.C
+
+
+# sub-models
+parcel/makePlateletParcelSubmodels.C
+
+LIB = $(FOAM_LIBBIN)/libplateletLpt

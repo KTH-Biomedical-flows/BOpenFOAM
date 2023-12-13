@@ -1,0 +1,179 @@
+/*---------------------------------------------------------------------------*\
+|                       _    _  _     ___                       | The         |
+|     _____      ____ _| | _| || |   / __\__   __ _ _ __ ___    | Swiss       |
+|    / __\ \ /\ / / _` | |/ / || |_ / _\/ _ \ / _` | '_ ` _ \   | Army        |
+|    \__ \\ V  V / (_| |   <|__   _/ / | (_) | (_| | | | | | |  | Knife       |
+|    |___/ \_/\_/ \__,_|_|\_\  |_| \/   \___/ \__,_|_| |_| |_|  | For         |
+|                                                               | OpenFOAM    |
+-------------------------------------------------------------------------------
+License
+    This file is part of swak4Foam.
+
+    swak4Foam is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
+
+    swak4Foam is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with swak4Foam; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+Contributors/Copyright:
+    2012-2013, 2016-2018, 2022 Bernhard F.W. Gschaider <bgschaid@hfd-research.com>
+
+ SWAK Revision: $Id$
+\*---------------------------------------------------------------------------*/
+
+#include "facEdgeCoeffLaplacianFunctionPlugin.H"
+#include "FaFieldValueExpressionDriver.H"
+
+#include "addToRunTimeSelectionTable.H"
+
+#include "faMatrix.H"
+#include "faLaplacianScheme.H"
+
+namespace Foam {
+
+#define addNamedTemplate2ToRunTimeSelectionTable\
+(baseType,thisType,Targ1,Targ2,argNames,lookup)                          \
+                                                                              \
+    /* Add the thisType constructor function to the table, find by lookup */  \
+    baseType::add##argNames##ConstructorToTable< thisType< Targ1,Targ2 > >   \
+        add_##lookup##_##thisType##Targ1##Targ2##argNames##ConstructorTo##baseType##Table_(#lookup)
+
+typedef facEdgeCoeffLaplacianFunctionPlugin<scalar,scalar> laplacianScalarScalar;
+defineTemplateTypeNameAndDebug(laplacianScalarScalar,0);
+addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,scalar,scalar,name,facEdgeCoeffScalarLaplacianScalar);
+
+// typedef facEdgeCoeffLaplacianFunctionPlugin<scalar,symmTensor> laplacianScalarSymmTensor;
+// defineTemplateTypeNameAndDebug(laplacianScalarSymmTensor,0);
+// addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,scalar,symmTensor,name,facEdgeCoeffSymmTensorLaplacianScalar);
+
+// typedef facEdgeCoeffLaplacianFunctionPlugin<scalar,tensor> laplacianScalarTensor;
+// defineTemplateTypeNameAndDebug(laplacianScalarTensor,0);
+// addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,scalar,tensor,name,facEdgeCoeffTensorLaplacianScalar);
+
+typedef facEdgeCoeffLaplacianFunctionPlugin<vector,scalar> laplacianVectorScalar;
+defineTemplateTypeNameAndDebug(laplacianVectorScalar,0);
+addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,vector,scalar,name,facEdgeCoeffScalarLaplacianVector);
+
+typedef facEdgeCoeffLaplacianFunctionPlugin<tensor,scalar> laplacianTensorScalar;
+defineTemplateTypeNameAndDebug(laplacianTensorScalar,0);
+addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,tensor,scalar,name,facEdgeCoeffScalarLaplacianTensor);
+
+// typedef facEdgeCoeffLaplacianFunctionPlugin<symmTensor,scalar> laplacianSymmTensorScalar;
+// defineTemplateTypeNameAndDebug(laplacianSymmTensorScalar,0);
+// addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,symmTensor,scalar,name,facEdgeCoeffScalarLaplacianSymmTensor);
+
+// typedef facEdgeCoeffLaplacianFunctionPlugin<sphericalTensor,scalar> laplacianSphericalTensorScalar;
+// defineTemplateTypeNameAndDebug(laplacianSphericalTensorScalar,0);
+// addNamedTemplate2ToRunTimeSelectionTable(FaFieldValuePluginFunction, facEdgeCoeffLaplacianFunctionPlugin,sphericalTensor,scalar,name,facEdgeCoeffScalarLaplacianSphericalTensor);
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+template<class T,class GT>
+facEdgeCoeffLaplacianFunctionPlugin<T,GT>::facEdgeCoeffLaplacianFunctionPlugin(
+    const FaFieldValueExpressionDriver &parentDriver,
+    const word &name
+):
+    FaFieldValuePluginFunction(
+        parentDriver,
+        name,
+        word(pTraits<resultType>::typeName),
+        string(
+            "coeff internalFaField "
+            +pTraits<coeffType>::typeName
+            +",original internalFaField "
+            +pTraits<originalType>::typeName
+            +",specString primitive string"
+        )
+    )
+{
+}
+
+// * * * * * * * * * * * * * * * * Destructor  * * * * * * * * * * * * * * * //
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+template<class T,class GT>
+void facEdgeCoeffLaplacianFunctionPlugin<T,GT>::doEvaluation()
+{
+    IStringStream spec(specString_);
+
+    const faMesh &aMesh=dynamicCast<FaFieldValueExpressionDriver>(
+        parentDriver()
+    ).aMesh();
+
+    tmp<fa::laplacianScheme<T> > scheme(
+        fa::laplacianScheme<T>::New(
+            aMesh,
+            spec
+        )
+    );
+
+    autoPtr<resultType> pInterpol(
+        new resultType(
+            IOobject(
+                "facInterpolated"+this->original_->name(),
+                mesh().time().timeName(),
+                mesh(),
+                IOobject::NO_READ,
+                IOobject::NO_WRITE
+            ),
+            const_cast<fa::laplacianScheme<T>&>(scheme()).facLaplacian(coeff_(),original_())
+        )
+    );
+
+    result().setObjectResult(pInterpol);
+}
+
+template<class T,class GT>
+void facEdgeCoeffLaplacianFunctionPlugin<T,GT>::setArgument(
+    label index,
+    const string &content,
+    const CommonValueExpressionDriver &driver
+)
+{
+    assert(index==0 || index==1);
+    if(index==0) {
+        this->coeff_.reset(
+            new coeffType(
+                dynamicCast<const FaFieldValueExpressionDriver>(
+                    driver
+                ).getResult<coeffType>()
+            )
+        );
+    } else {
+        this->original_.reset(
+            new originalType(
+                dynamicCast<const FaFieldValueExpressionDriver>(
+                    driver
+                ).getResult<originalType>()
+            )
+        );
+    }
+}
+
+template <class T,class GT>
+void facEdgeCoeffLaplacianFunctionPlugin<T,GT>::setArgument(
+    label index,
+    const string &value
+)
+{
+    assert(index==2);
+
+    specString_=value;
+}
+
+// * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
+
+} // namespace
+
+// ************************************************************************* //

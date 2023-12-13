@@ -1,0 +1,205 @@
+/*---------------------------------------------------------------------------*\
+|                       _    _  _     ___                       | The         |
+|     _____      ____ _| | _| || |   / __\__   __ _ _ __ ___    | Swiss       |
+|    / __\ \ /\ / / _` | |/ / || |_ / _\/ _ \ / _` | '_ ` _ \   | Army        |
+|    \__ \\ V  V / (_| |   <|__   _/ / | (_) | (_| | | | | | |  | Knife       |
+|    |___/ \_/\_/ \__,_|_|\_\  |_| \/   \___/ \__,_|_| |_| |_|  | For         |
+|                                                               | OpenFOAM    |
+-------------------------------------------------------------------------------
+License
+    This file is part of swak4Foam.
+
+    swak4Foam is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 2 of the License, or (at your
+    option) any later version.
+
+    swak4Foam is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with swak4Foam; if not, write to the Free Software Foundation,
+    Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+Class
+    Foam::swakDataEntry
+
+Description
+
+SourceFiles
+    swakDataEntry.C
+
+Contributors/Copyright:
+    2011, 2013, 2015-2018, 2020-2022 Bernhard F.W. Gschaider <bgschaid@hfd-research.com>
+    2019 Mark Olesen <Mark.Olesen@esi-group.com>
+
+ SWAK Revision: $Id$
+\*---------------------------------------------------------------------------*/
+
+#ifndef swakDataEntry_H
+#define swakDataEntry_H
+
+#include "foamVersion4swak.H"
+
+#include "CommonValueExpressionDriver.H"
+#include "swakExprString.H"
+
+#ifdef FOAM_DATAENTRY_IS_NOW_FUNCTION1
+#include "Function1.H"
+#define DataEntry Function1
+#else
+#include "DataEntry.H"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+#ifdef FOAM_DATAENTRY_IS_NOW_FUNCTION1
+#ifdef FOAM_FUNCTION1NAMESPACE_IS_NOW_1S
+namespace Function1s {
+#else
+namespace Function1Types {
+#endif
+#endif
+
+template<class Type>
+class swakDataEntry;
+
+template<class Type>
+Ostream& operator<<(Ostream&, const swakDataEntry<Type>&);
+
+/*---------------------------------------------------------------------------*\
+                           Class swakDataEntry Declaration
+\*---------------------------------------------------------------------------*/
+
+template<class Type>
+class swakDataEntry
+:
+    public DataEntry<Type>
+{
+    // Private data
+
+    //- the dictionary with the data (stored for rewriting)
+    autoPtr<dictionary> data_;
+
+    //- the actual driver for the Expressions
+    autoPtr<CommonValueExpressionDriver> driver_;
+
+    //- the expression that should be evaluated
+    exprString expression_;
+
+    //- name of the independent variable
+    word independentVariableName_;
+
+    // Private Member Functions
+
+    //- Disallow default bitwise assignment
+    void operator=(const swakDataEntry<Type>&);
+
+
+    //- get (and set if necessary) the driver
+    CommonValueExpressionDriver &driver();
+
+public:
+
+    // Runtime type information
+    TypeName("swak");
+
+
+    // Constructors
+
+        //- Construct from entry name and Istream
+        swakDataEntry(
+            const word& entryName,
+            const dictionary& dict,
+            bool readEntryType=true
+        );
+
+        //- Copy constructor
+        swakDataEntry(const swakDataEntry<Type>& cnst);
+
+        //- Construct and return a clone
+        virtual tmp<DataEntry<Type> > clone() const
+        {
+            return tmp<DataEntry<Type> >(new swakDataEntry<Type>(*this));
+        }
+
+
+    //- Destructor
+    virtual ~swakDataEntry();
+
+
+    // Member Functions
+
+        //- Return constant value
+        Type value(const scalar) const;
+
+    //- Integrate between two values
+    Type integrate(const scalar x1, const scalar x2) const;
+
+    //- Return value as a function of (scalar) independent variable
+    tmp<Field<Type> > value(const scalarField& x) const;
+
+    //- Integrate between two (scalar) values
+    tmp<Field<Type> > integrate
+    (
+        const scalarField& x1,
+        const scalarField& x2
+    ) const;
+
+    //- changed name in some OF versions
+    Type integral(const scalar x1, const scalar x2) const {
+        return integrate(x1, x2);
+    }
+
+    tmp<Field<Type> > integral
+    (
+        const scalarField& x1,
+        const scalarField& x2
+    ) const {
+        return integrate(x1, x2);
+    }
+
+    // I/O
+
+        //- Ostream Operator
+        friend Ostream& operator<< <Type>
+        (
+            Ostream& os,
+            const swakDataEntry<Type>& cnst
+        );
+
+#ifdef FOAM_DATAENTRY_CLASS_NEEDS_WRITEDATA
+        //- Write in dictionary format
+        virtual void writeData(Ostream& os) const;
+#endif
+
+    void write(Ostream &os) const {
+        os << *this;
+    }
+};
+
+#ifdef FOAM_DATAENTRY_IS_NOW_FUNCTION1
+    }
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+#   include "swakDataEntry.C"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+#endif
+
+// ************************************************************************* //

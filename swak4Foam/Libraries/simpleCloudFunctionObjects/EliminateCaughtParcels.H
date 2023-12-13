@@ -1,0 +1,205 @@
+/*---------------------------------------------------------------------------*\
+|                       _    _  _     ___                       | The         |
+|     _____      ____ _| | _| || |   / __\__   __ _ _ __ ___    | Swiss       |
+|    / __\ \ /\ / / _` | |/ / || |_ / _\/ _ \ / _` | '_ ` _ \   | Army        |
+|    \__ \\ V  V / (_| |   <|__   _/ / | (_) | (_| | | | | | |  | Knife       |
+|    |___/ \_/\_/ \__,_|_|\_\  |_| \/   \___/ \__,_|_| |_| |_|  | For         |
+|                                                               | OpenFOAM    |
+-------------------------------------------------------------------------------
+License
+    This file is part of swak4Foam.
+
+    swak4Foam is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    swak4Foam is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with swak4Foam.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::EliminateCaughtParcels
+
+Description
+    Eliminate parcels that were caught in unfortunate conditions (usually
+    corners) and keep colliding with the walls for a large number of times
+
+    Repeated offenders are caught if they hit the same patch face for a
+    specified number of times without hitting any other faces between that
+    and not moving significant amount between the hits
+
+    The offending particle is marked to not be kept and reported to the terminal
+
+    Based on the CloudTracks-function object
+
+SourceFiles
+    EliminateCaughtParcels.C
+
+Contributors/Copyright:
+    2016, 2018, 2020-2021 Bernhard F.W. Gschaider <bgschaid@hfd-research.com>
+    2018 Mark Olesen <Mark.Olesen@esi-group.com>
+
+ SWAK Revision: $Id:  $
+\*---------------------------------------------------------------------------*/
+
+#ifndef EliminateCaughtParcels_H
+#define EliminateCaughtParcels_H
+
+#include "CloudFunctionObject.H"
+
+#include "swakCloudTypes.H"
+
+#include "TimelineCollection.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+/*---------------------------------------------------------------------------*\
+                       Class EliminateCaughtParcels Declaration
+\*---------------------------------------------------------------------------*/
+
+template<class CloudType>
+class EliminateCaughtParcels
+:
+    public CloudFunctionObject<CloudType>
+{
+    // Private data
+
+    // Typedefs
+
+    //- Convenience typedef for parcel type
+    typedef typename CloudType::parcelType parcelType;
+
+    //- Convenience typedef for hash hit-table
+    typedef HashTable<label, labelPair, typename labelPair::Hash<> > hitTableType;
+    typedef HashTable<vector, labelPair, typename labelPair::Hash<> > hitPositionTableType;
+
+
+    //- Table of number of times a particle has hit a face
+    hitTableType faceHitCounter_;
+
+    //- Table of the last face a particle has hit
+    hitTableType lastFace_;
+
+    //- Table of the last position a particle has hit
+    hitPositionTableType lastPosition_;
+
+    //- number of times a particle may hit the same patch face
+    label maxNumberOfHits_;
+
+    //- distance below which it is assumed that the particle has not moved
+    scalar minDistanceMove_;
+
+    //- remember particles to eliminate because setting keepParticle to false in postPatch is not sufficient
+    HashSet<labelPair, typename labelPair::Hash<> > toEliminate_;
+
+    //- Pointer to the cloud storage
+    autoPtr<Cloud<parcelType> > eliminatedPtr_;
+
+    //- here we get our files from
+    TimelineCollection out_;
+
+protected:
+
+    // Protected member functions
+
+    //- Write post-processing info
+    void write();
+
+
+public:
+
+    //- Runtime type information
+    TypeName("eliminateCaughtParcels");
+
+
+    // Constructors
+
+    //- Construct from dictionary
+    EliminateCaughtParcels
+    (
+        const dictionary& dict,
+        CloudType& owner,
+        const word& modelName
+    );
+
+    //- Construct copy
+    EliminateCaughtParcels(const EliminateCaughtParcels<CloudType>& ppm);
+
+    //- Construct and return a clone
+    virtual autoPtr<CloudFunctionObject<CloudType> > clone() const
+        {
+            return autoPtr<CloudFunctionObject<CloudType> >
+                (
+                    new EliminateCaughtParcels<CloudType>(*this)
+                );
+        }
+
+
+    //- Destructor
+    virtual ~EliminateCaughtParcels();
+
+
+    // Member Functions
+
+    // Evaluation
+
+    //- Pre-evolve hook
+    virtual void preEvolve(
+#ifdef FOAM_CLOUD_FUNCTION_OBJECT_PRE_POST_EVOLVE_WITH_TD
+        const typename CloudType::parcelType::trackingData &td
+#endif
+    );
+
+    //- Post-evolve hook
+    virtual void postEvolve(
+#ifdef FOAM_CLOUD_FUNCTION_OBJECT_PRE_POST_EVOLVE_WITH_TD
+        const typename CloudType::parcelType::trackingData &td
+#endif
+    );
+
+    //- Post-move hook
+    virtual void postMove
+    (
+        typename CloudType::parcelType& p,
+        const label cellI,
+        const scalar dt,
+        const point& position0,
+        bool& keepParticle
+    );
+
+    //- Post-face hook
+    virtual void postFace
+    (
+        const parcelType& p,
+        const label faceI,
+        bool& keepParticle
+    );
+
+
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#ifdef NoRepository
+#   include "EliminateCaughtParcels.C"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //

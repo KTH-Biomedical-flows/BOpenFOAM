@@ -1,0 +1,7 @@
+#!/bin/bash
+# engine:jinja2
+
+{% if numberOfProcessors > 1 -%}
+rm 0/*.template
+pyFoamDecompose.py . {{numberOfProcessors}}
+{% endif -%}

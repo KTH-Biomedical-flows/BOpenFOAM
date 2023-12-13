@@ -1,0 +1,33 @@
+// -*- c++ -*-
+
+function {
+    description "Which function to use";
+    default random;
+    options (
+        random
+        halfRandom
+        staggeredId
+        fromCenter
+        fromCenterWeighted
+        fromWall
+    );
+}
+mappingMethod {
+    description "The mappingMethod to set";
+    default floor;
+    options (
+        floor
+        ceil
+        round
+        range
+    );
+}
+seed {
+    description "Seed for the random numbers";
+    default 42;
+}
+
+do_redistribute {
+    description "Redistribute everything to other CPUs";
+    default true;
+}

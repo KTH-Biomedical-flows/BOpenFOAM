@@ -1,0 +1,134 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     icoFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         0.5;
+
+deltaT          0.005;
+
+writeControl    timeStep;
+
+writeInterval   20;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression on;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+libs (
+    "libsimpleFunctionObjects.so"
+    "libsimpleSwakFunctionObjects.so"
+    "libswakFunctionObjects.so"
+);
+
+functions {
+    errors strict;
+
+    writeStart {
+        //        type writeIfFieldOutside;
+        type writeIfSwakExpression;
+        active false;
+
+        outputControlMode timeStep;
+        outputInterval 1;
+
+        writeControlMode timesteps;
+        // cooldownMode timesteps;
+        //        writeControlMode untilSwitch;
+        //        writeControlMode always;
+        //        writeControlMode intervall;
+        //        cooldownMode timesteps;
+        //        cooldownMode no;
+        cooldownMode retrigger;
+        //       cooldownMode intervall;
+
+        //        storeAndWritePreviousState false;
+        storeAndWritePreviousState true;
+        numberOfTimestepsToStore 3;
+
+        writeTimesteps 3;
+        cooldownTimesteps 17;
+        writeIntervall 2.5;
+        cooldownIntervall 16.5;
+
+        variables (
+            "writeNow=0.07;"
+        );
+
+        valueType internalField;
+        writeCondition "time()>=writeNow";
+        writeConditionAccumulation or;
+
+        stopWritingCondition "(time() % 10)==5";
+        stopWritingConditionAccumulation and;
+
+        retriggerCondition "time() < 0";
+        retriggerConditionAccumulation or;
+    }
+    nowTimeField {
+        type expressionField;
+        autowrite true;
+        expression "time()";
+        outputControl timeStep;
+        outputInterval 1;
+        fieldName nowTime;
+    }
+    suddenDeath {
+      type provokeSignal;
+      // signalToRaise SEGV;
+      signalToRaise INT;
+      timeToRaise 0.42;
+      processorsToRaiseSignal(1);
+    }
+    sigHandler {
+      type writeOldTimesOnSignal;
+      numberOfTimestepsToStore 5;
+      writeCurrent true;
+      // sigFPE false;
+      // sigSEGV false;
+      sigINT true;
+      //        sigQUIT true;
+      moreThanOneInstanceOfTimeCloneListIsOK 1;
+    }
+    writeEnd {
+        $writeStart;
+        variables (
+            "writeNow=0.13;"
+        );
+        numberOfTimestepsToStore 1;
+        moreThanOneInstanceOfTimeCloneListIsOK 1;
+    }
+}
+DebugSwitches {
+   TimeCloneList 1;
+}

@@ -1,0 +1,10 @@
+expressionSource.C
+forceEquation.C
+
+swakSetValues.C
+swakExplicitSources.C
+swakImplicitSources.C
+
+SwakSetTemperature.C
+
+LIB = $(FOAM_USER_LIBBIN)/libswakSourceFields

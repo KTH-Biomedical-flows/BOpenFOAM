@@ -1,0 +1,130 @@
+/*---------------------------------------------------------------------------*\
+|                       _    _  _     ___                       | The         |
+|     _____      ____ _| | _| || |   / __\__   __ _ _ __ ___    | Swiss       |
+|    / __\ \ /\ / / _` | |/ / || |_ / _\/ _ \ / _` | '_ ` _ \   | Army        |
+|    \__ \\ V  V / (_| |   <|__   _/ / | (_) | (_| | | | | | |  | Knife       |
+|    |___/ \_/\_/ \__,_|_|\_\  |_| \/   \___/ \__,_|_| |_| |_|  | For         |
+|                                                               | OpenFOAM    |
+-------------------------------------------------------------------------------
+License
+    This file is part of swak4Foam.
+
+    swak4Foam is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    swak4Foam is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with swak4Foam.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::SwakExplicitSource
+
+Description
+    Sets an explicit source term according to an expression
+
+SourceFiles
+    SwakExplicitSource.C
+
+Contributors/Copyright:
+    2010, 2012-2018 Bernhard F.W. Gschaider <bgschaid@hfd-research.com>
+
+ SWAK Revision: $Id$
+\*---------------------------------------------------------------------------*/
+
+#ifndef SwakExplicitSource_H
+#define SwakExplicitSource_H
+
+#include "SwakBasicSourceCommon.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+#ifdef FOAM_HAS_FVOPTIONS
+    namespace fv {
+#endif
+
+/*---------------------------------------------------------------------------*\
+                           Class SwakExplicitSource Declaration
+\*---------------------------------------------------------------------------*/
+
+template<class T>
+class SwakExplicitSource
+:
+    public SwakBasicSourceCommon<T>
+{
+    // Private data
+
+    SwakExplicitSource(const SwakExplicitSource&);
+
+public:
+
+    //- Runtime type information
+    TypeName("SwakExplicitSource");
+
+    // Constructors
+
+        //- Construct from a dictionary
+        SwakExplicitSource
+        (
+            const word& name,
+            const word& modelType,
+            const dictionary& dict,
+            const fvMesh& mesh
+        );
+
+    // Destructor
+
+        virtual ~SwakExplicitSource();
+
+        // Evaluation
+
+        //- Add explicit contribution to equation
+        virtual void addSup(
+            fvMatrix<T>& eqn,
+            const label fieldI
+        );
+
+#ifdef FOAM_FVOPTION_HAS_ADDITIONAL_ADDSUP
+        // Add explicit and implicit contributions to compressible equations
+        virtual void addSup(
+            const volScalarField& rho,
+            fvMatrix<T>& eqn,
+            const label fieldI
+        );
+
+        // Add explicit and implicit contributions to phase equations
+        virtual void addSup(
+            const volScalarField& alpha,
+            const volScalarField& rho,
+            fvMatrix<T>& eqn,
+            const label fieldI
+        );
+#endif
+
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+#ifdef FOAM_HAS_FVOPTIONS
+    }
+#endif
+
+} // End namespace Foam
+
+#ifdef NoRepository
+#   include "SwakExplicitSource.C"
+#endif
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //

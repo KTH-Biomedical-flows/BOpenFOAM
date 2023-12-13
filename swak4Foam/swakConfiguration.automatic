@@ -1,0 +1,97 @@
+# -*- shell-script -*-
+
+echo "Automatic settings from ./swakConfiguration.automatic"
+
+if [[ -e ./swakConfiguration.automatic.settings ]] ; then
+    echo "Loading settings from ./swakConfiguration.automatic.settings"
+    source ./swakConfiguration.automatic.settings
+fi
+
+if [[ -z "$SWAK_PYTHON2VERSION" ]] ; then
+    echo "Looking for Python 2"
+    for p2 in 7 6
+    do
+        WHICHPATH=$(which 2>/dev/null python2.$p2-config)
+        if [[ $? == 0 ]]; then
+            echo "Found Python 2.$p2"
+            SWAK_PYTHON2VERSION=$p2
+            break
+        fi
+    done
+else
+    echo "Python 2 preset to 2.$SWAK_PYTHON2VERSION"
+fi
+
+if [[ -n "$SWAK_PYTHON2VERSION" ]] ; then
+    echo "Configuring Python 2.$SWAK_PYTHON2VERSION"
+    export SWAK_PYTHON2_INCLUDE="$(python2.$SWAK_PYTHON2VERSION-config --cflags)"
+    export SWAK_PYTHON2_LINK="$(python2.$SWAK_PYTHON2VERSION-config --ldflags)"
+    echo "Using python2.$SWAK_PYTHON2VERSION at $WHICHPATH for python2"
+    echo "Python2 Includes: $SWAK_PYTHON2_INCLUDE"
+    echo "Python2 Link: $SWAK_PYTHON2_LINK"
+fi
+
+if [[ -z "$SWAK_PYTHON3VERSION" ]] ; then
+    echo "Looking for Python 3"
+    for p3 in 12 11 10 9 8 7 6 5 4 3
+    do
+        WHICHPATH=$(which 2>/dev/null python3.$p3-config)
+        if [[ $? == 0 ]]; then
+            echo "Found Python 3.$p3"
+            SWAK_PYTHON3VERSION=$p3
+            break
+        fi
+    done
+else
+    echo "Python 3 preset to 3.$SWAK_PYTHON3VERSION"
+fi
+
+if [[ -n "$SWAK_PYTHON3VERSION" ]] ; then
+    echo "Configuring Python 3.$SWAK_PYTHON3VERSION"
+    export SWAK_PYTHON3_INCLUDE="$(python3.$SWAK_PYTHON3VERSION-config --cflags)"
+    export SWAK_PYTHON3_LINK="$(python3.$SWAK_PYTHON3VERSION-config --ldflags) -lpython3.$SWAK_PYTHON3VERSION"
+    echo "Using python3.$SWAK_PYTHON3VERSION at $WHICHPATH for python3"
+    echo "Python3 Includes: $SWAK_PYTHON3_INCLUDE"
+    echo "Python3 Link: $SWAK_PYTHON3_LINK"
+fi
+
+swakDir=$(pwd)
+requirementsDir=$swakDir/privateRequirements
+
+if [ -e $requirementsDir/include/lua.h ];
+then
+    echo "Using our own Lua at $requirementsDir"
+    export SWAK_LUA_INCLUDE=-I$requirementsDir/include
+    export SWAK_LUA_LINK="-L$requirementsDir/lib -llua"
+else
+    HASLUA=$(pkg-config --exists lua)
+    if [[ $? == 0 ]]; then
+        LUAVERSION=$(pkg-config --modversion lua)
+        if [[ "$LUAVERSION" < "5.3" ]]
+        then
+            echo "Lua version $LUAVERSION too small. At least 5.3 required"
+        else
+            echo "Using lua"
+            export SWAK_LUA_INCLUDE=$(pkg-config --cflags lua)
+            export SWAK_LUA_LINK=$(pkg-config --libs lua)
+        fi
+    fi
+fi
+
+# List separated by : with directories to user plugins
+# export SWAK_USER_PLUGINS=../Examples/UserPlugins/swakTestFunctionPlugins
+
+# Compile the parsers with a lower optimization use only if the
+# compilation of the grammar takes too long (possibly due to memory
+# restrictions on the machine)
+
+export SWAK_COMPILE_GRAMMAR_OPTION="-O1"
+
+if [ "$WM_USE_HOMEBREW" = 1 ]
+then
+    export SWAK_BISON=/usr/local/opt/bison27/bin/bison
+fi
+
+# If enabled, uses a 30 delay for building Bison generated files.
+# Useful only for checking if there are any race conditions.
+# export SWAK_TEST_RACE_CONDITIONS=1

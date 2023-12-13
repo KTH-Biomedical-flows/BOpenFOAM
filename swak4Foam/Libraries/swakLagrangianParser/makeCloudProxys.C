@@ -1,0 +1,83 @@
+/*---------------------------------------------------------------------------*\
+|                       _    _  _     ___                       | The         |
+|     _____      ____ _| | _| || |   / __\__   __ _ _ __ ___    | Swiss       |
+|    / __\ \ /\ / / _` | |/ / || |_ / _\/ _ \ / _` | '_ ` _ \   | Army        |
+|    \__ \\ V  V / (_| |   <|__   _/ / | (_) | (_| | | | | | |  | Knife       |
+|    |___/ \_/\_/ \__,_|_|\_\  |_| \/   \___/ \__,_|_| |_| |_|  | For         |
+|                                                               | OpenFOAM    |
+-------------------------------------------------------------------------------
+License
+    This file is part of swak4Foam.
+
+    swak4Foam is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    swak4Foam is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with swak4Foam.  If not, see <http://www.gnu.org/licenses/>.
+
+Contributors/Copyright:
+    2012-2013, 2016-2018 Bernhard F.W. Gschaider <bgschaid@hfd-research.com>
+
+ SWAK Revision: $Id$
+\*---------------------------------------------------------------------------*/
+
+#include "CloudProxyForReactingMultiphaseParcel.H"
+
+#include "addToRunTimeSelectionTable.H"
+
+#include "swakCloudTypes.H"
+
+#ifdef FOAM_REACTINGCLOUD_TEMPLATED
+#include "BasicReactingMultiphaseCloud.H"
+#include "BasicReactingCloud.H"
+#else
+#include "basicReactingMultiphaseCloud.H"
+#include "basicReactingCloud.H"
+#endif
+
+#include "basicKinematicCloud.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    addCloudProxyToTable(CloudProxyForKinematicParcel,basicKinematicCloud);
+
+    addCloudProxyToTable(CloudProxyForThermoParcel,swakFluidThermoCloudType);
+
+#ifndef FOAM_BASICKINEMATICCLOUD_HAS_NO_KINEMATIC_TYPE
+    addKinematicCloudProxyToTable(CloudProxyForKinematicParcel,basicKinematicCloud);
+    addKinematicCloudProxyToTable(CloudProxyForThermoParcel,swakFluidThermoCloudType);
+#endif
+
+#ifdef FOAM_REACTINGCLOUD_TEMPLATED
+    addCloudProxyToTable(CloudProxyForReactingParcel,thermoReactingCloud);
+    addCloudProxyToTable(CloudProxyForReactingParcel,constThermoReactingCloud);
+    addCloudProxyToTable(CloudProxyForReactingParcel,icoPoly8ThermoReactingCloud);
+
+    addCloudProxyToTable(CloudProxyForReactingMultiphaseParcel,thermoReactingMultiphaseCloud);
+    addCloudProxyToTable(CloudProxyForReactingMultiphaseParcel,constThermoReactingMultiphaseCloud);
+    addCloudProxyToTable(CloudProxyForReactingMultiphaseParcel,icoPoly8ThermoReactingMultiphaseCloud);
+#else
+    addCloudProxyToTable(CloudProxyForReactingParcel,basicReactingCloud);
+
+    addCloudProxyToTable(CloudProxyForReactingMultiphaseParcel,basicReactingMultiphaseCloud);
+
+#ifndef FOAM_BASICKINEMATICCLOUD_HAS_NO_KINEMATIC_TYPE
+    addKinematicCloudProxyToTable(CloudProxyForReactingParcelNoComposition,basicReactingCloud);
+    addKinematicCloudProxyToTable(CloudProxyForReactingMultiphaseParcelNoComposition,basicReactingMultiphaseCloud);
+#endif
+
+#endif
+
+
+} // namespace end
+
+// ************************************************************************* //

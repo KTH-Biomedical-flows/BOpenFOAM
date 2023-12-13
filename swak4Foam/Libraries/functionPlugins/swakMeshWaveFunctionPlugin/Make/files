@@ -1,0 +1,13 @@
+meshLayersGeneralPluginFunction.C
+meshLayersFromPatchPluginFunction.C
+meshLayersFromCellsPluginFunction.C
+meshLayersFromFacesPluginFunction.C
+
+floodFillGeneralPluginFunction.C
+floodFillFromCellsPluginFunction.C
+floodFillFromFacesPluginFunction.C
+floodFillFromPointPluginFunction.C
+
+cellColouringPluginFunction.C
+
+LIB = $(FOAM_USER_LIBBIN)/libswakMeshWaveFunctionPlugin
