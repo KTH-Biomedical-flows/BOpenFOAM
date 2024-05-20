@@ -30,8 +30,8 @@ License
 #include "fvmLaplacian.H"
 #include "fvmSup.H"
 #include "momentumTransportModel.H"
-#include "fluidThermophysicalTransporotModel.H"
 #include "addToRunTimeSelectionTable.H"
+#include "vfDependentViscosityTwoPhaseMixture.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -52,75 +52,6 @@ namespace functionObjects
 
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
-
-Foam::tmp<Foam::volScalarField> Foam::functionObjects::passiveScalar::D
-(
-    const surfaceScalarField& phi
-) const
-{
-    typedef incompressible::turbulenceModel icoModel;
-    typedef compressible::turbulenceModel cmpModel;
-
-    word Dname("D" + s_.name());
-
-    if (constantD_)
-    {
-        return tmp<volScalarField>
-        (
-            new volScalarField
-            (
-                IOobject
-                (
-                    Dname,
-                    mesh_.time().timeName(),
-                    mesh_.time(),
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh_,
-                dimensionedScalar(Dname, phi.dimensions()/dimLength, D_)
-            )
-        );
-    }
-    else if (mesh_.foundObject<icoModel>(turbulenceModel::propertiesName))
-    {
-        const icoModel& model = mesh_.lookupObject<icoModel>
-        (
-            turbulenceModel::propertiesName
-        );
-
-        return alphaD_*model.nu() + alphaDt_*model.nut();
-    }
-    else if (mesh_.foundObject<cmpModel>(turbulenceModel::propertiesName))
-    {
-        const cmpModel& model = mesh_.lookupObject<cmpModel>
-        (
-            turbulenceModel::propertiesName
-        );
-
-        return alphaD_*model.mu() + alphaDt_*model.mut();
-    }
-    else
-    {
-        return tmp<volScalarField>
-        (
-            new volScalarField
-            (
-                IOobject
-                (
-                    Dname,
-                    mesh_.time().timeName(),
-                    mesh_.time(),
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh_,
-                dimensionedScalar(Dname, phi.dimensions()/dimLength, 0.0)
-            )
-        );
-    }
-}
-
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -150,6 +81,7 @@ Foam::functionObjects::passiveScalar::passiveScalar
     )
 {
     read(dict);
+    dict_ = dict;
 }
 
 
@@ -164,23 +96,25 @@ Foam::functionObjects::passiveScalar::~passiveScalar()
 bool Foam::functionObjects::passiveScalar::read(const dictionary& dict)
 {
     fvMeshFunctionObject::read(dict);
+    // dict_ = dict;
 
     phiName_ = dict.lookupOrDefault<word>("phi", "phi");
     rhoName_ = dict.lookupOrDefault<word>("rho", "rho");
+    diffusionModelName_ = dict.lookup<word>("diffusionModel");
+    Info << "Selecting diffusion model " << diffusionModelName_ << endl;
     schemesField_ = dict.lookupOrDefault<word>("schemesField", fieldName_);
-
     constantD_ = dict.readIfPresent("D", D_);
     alphaD_ = dict.lookupOrDefault("alphaD", 1.0);
     alphaDt_ = dict.lookupOrDefault("alphaDt", 1.0);
 
     dict.readIfPresent("nCorr", nCorr_);
 
-    if (dict.found("fvOptions"))
-    {
-        fvOptions_.reset(dict.subDict("fvOptions"));
-    }
-
     return true;
+}
+
+Foam::wordList Foam::functionObjects::passiveScalar::fields() const
+{
+	return wordList{phiName_};
 }
 
 
@@ -191,17 +125,22 @@ bool Foam::functionObjects::passiveScalar::execute()
     const surfaceScalarField& phi =
         mesh_.lookupObject<surfaceScalarField>(phiName_);
 
-    // Calculate the diffusivity
-    volScalarField D(this->D(phi));
-
+    const volVectorField & U = mesh_.lookupObject<volVectorField>("U");
+    const vfDependentViscosityTwoPhaseMixture & transport = mesh_.lookupObject<vfDependentViscosityTwoPhaseMixture>("phaseProperties");
+    //const volVectorField & U = mesh_.lookupObject<volVectorField>("U");
+    const viscosityModelC & viscModel = transport.muModel();
+    //const surfaceScalarField& phi = mesh_.lookupObject<surfaceScalarField>(phiName_);
+    autoPtr<diffusionModel> diffusionModel = diffusionModel::New(dict_, U, phi, viscModel);
     word divScheme("div(phi," + schemesField_ + ")");
-    word laplacianScheme("laplacian(" + D.name() + "," + schemesField_ + ")");
+    diffusionModel->correct(s_);
+    //word laplacianScheme("laplacian(" + D.name() + "," + schemesField_ + ")");
 
     // Set under-relaxation coeff
     scalar relaxCoeff = 0.0;
-    if (mesh_.relaxEquation(schemesField_))
+    const Foam::fvModels& fvModels(Foam::fvModels::New(mesh_));
+    if (mesh_.solution().relaxEquation(schemesField_))
     {
-        relaxCoeff = mesh_.equationRelaxationFactor(schemesField_);
+        relaxCoeff = mesh_.solution().equationRelaxationFactor(schemesField_);
     }
 
     if (phi.dimensions() == dimMass/dimTime)
@@ -215,16 +154,15 @@ bool Foam::functionObjects::passiveScalar::execute()
             (
                 fvm::ddt(rho, s_)
               + fvm::div(phi, s_, divScheme)
-              - fvm::laplacian(D, s_, laplacianScheme)
-             ==
-                fvOptions_(rho, s_)
+	      - diffusionModel->divFlux(s_)
+              ==
+	        fvModels.source(s_)
             );
 
             sEqn.relax(relaxCoeff);
 
-            fvOptions_.constrain(sEqn);
 
-            sEqn.solve(mesh_.solverDict(schemesField_));
+            sEqn.solve(schemesField_);
         }
     }
     else if (phi.dimensions() == dimVolume/dimTime)
@@ -235,16 +173,15 @@ bool Foam::functionObjects::passiveScalar::execute()
             (
                 fvm::ddt(s_)
               + fvm::div(phi, s_, divScheme)
-              - fvm::laplacian(D, s_, laplacianScheme)
-             ==
-                fvOptions_(s_)
+	      - diffusionModel->divFlux(s_)
+              == 
+	      fvModels.source(s_)
             );
 
             sEqn.relax(relaxCoeff);
 
-            fvOptions_.constrain(sEqn);
 
-            sEqn.solve(mesh_.solverDict(schemesField_));
+            sEqn.solve(schemesField_);
         }
     }
     else
@@ -256,7 +193,7 @@ bool Foam::functionObjects::passiveScalar::execute()
     }
 
     Info<< endl;
-
+    diffusionModel.clear();
     return true;
 }
 

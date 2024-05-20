@@ -1,5 +1,6 @@
 wallShearStressGradient/wallShearStressGradient.C
 vorticitySources/vorticitySources.C
 leightonAcrivosSources/leightonAcrivosSources.C
+passiveScalar/passiveScalar.C
 
 LIB = $(FOAM_LIBBIN)/libvfDependentFunctionObjects

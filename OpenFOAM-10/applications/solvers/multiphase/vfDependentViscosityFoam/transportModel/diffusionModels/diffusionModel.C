@@ -54,11 +54,8 @@ Foam::autoPtr<Foam::diffusionModel> Foam::diffusionModel::New
 )
 {
     const word modelType(dict.lookup("diffusionModel"));
-	dictionary subDict = dict.subDict(modelType + "Coeffs");
-
-    diffusionConstructorTable::iterator cstrIter =
+    typename diffusionConstructorTable::iterator cstrIter =
         diffusionConstructorTablePtr_->find(modelType);
-
     if (cstrIter == diffusionConstructorTablePtr_->end())
     {
         FatalErrorIn
@@ -71,6 +68,8 @@ Foam::autoPtr<Foam::diffusionModel> Foam::diffusionModel::New
             << diffusionConstructorTablePtr_->sortedToc()
             << exit(FatalError);
     }
+	dictionary subDict = dict.subDict(modelType + "Coeffs");
+    
 
     return autoPtr<diffusionModel>(cstrIter()(subDict, U, phi, viscosityModel));
 }

@@ -82,7 +82,7 @@ bool Foam::functionObjects::leightonAcrivosSources::execute()
     // Lookup fields
     const volVectorField & U = mesh_.lookupObject<volVectorField>(uName_);
     const vfDependentViscosityTwoPhaseMixture & transport = 
-        mesh_.lookupObject<vfDependentViscosityTwoPhaseMixture>("transportProperties");
+        mesh_.lookupObject<vfDependentViscosityTwoPhaseMixture>("phaseProperties");
     const viscosityModelC & viscModel = transport.muModel();
     const volScalarField & alpha = transport.alpha1();
     const volScalarField gamma = viscModel.strainRate(U);

@@ -4,6 +4,10 @@
 #include "fvMeshFunctionObject.H"
 #include "volFields.H"
 #include "fvModels.H"
+#include "diffusionModel.H"
+#include "viscosityModelC.H"
+#include "vfDependentViscosityTwoPhaseMixture.H"
+#include "runTimeSelectionTables.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -31,8 +35,14 @@ class passiveScalar
         //- Name of density field (optional)
         word rhoName_;
 
+	//- Dictionary holding the properties
+	dictionary dict_;
+
         //- Diffusion coefficient (optional)
         scalar D_;
+
+	//- Name of diffusion model
+	word diffusionModelName_;
 
         //- Flag to indicate whether a constant, uniform D_ is specified
         bool constantD_;
@@ -55,14 +65,10 @@ class passiveScalar
         //- The scalar field
         volScalarField s_;
 
-		//- Diffusion model
-		diffusionModel DModel_;
 
 
     // Private Member Functions
 
-        //- Return the diffusivity field
-        tmp<volScalarField> D(const surfaceScalarField& phi) const;
 
         //- Disallow default bitwise copy construct
         passiveScalar(const passiveScalar&);
@@ -96,6 +102,9 @@ public:
 
         //- Read the scalarTransport data
         virtual bool read(const dictionary&);
+
+	//- Return the list of fields required
+	virtual wordList fields() const;
 
         //- Calculate the scalarTransport
         virtual bool execute();
