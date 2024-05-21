@@ -200,6 +200,7 @@ bool Foam::functionObjects::passiveScalar::execute()
 
 bool Foam::functionObjects::passiveScalar::write()
 {
+    s_.write();
     return true;
 }
 
