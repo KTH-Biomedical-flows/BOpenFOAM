@@ -29,6 +29,7 @@ License
 #include "fvmDiv.H"
 #include "fvmLaplacian.H"
 #include "fvmSup.H"
+#include "fvConstraints.H"
 #include "momentumTransportModel.H"
 #include "addToRunTimeSelectionTable.H"
 #include "vfDependentViscosityTwoPhaseMixture.H"
@@ -138,6 +139,10 @@ bool Foam::functionObjects::passiveScalar::execute()
     // Set under-relaxation coeff
     scalar relaxCoeff = 0.0;
     const Foam::fvModels& fvModels(Foam::fvModels::New(mesh_));
+    const Foam::fvConstraints& fvConstraints
+    (
+        Foam::fvConstraints::New(mesh_)
+    );
     if (mesh_.solution().relaxEquation(schemesField_))
     {
         relaxCoeff = mesh_.solution().equationRelaxationFactor(schemesField_);
@@ -160,9 +165,9 @@ bool Foam::functionObjects::passiveScalar::execute()
             );
 
             sEqn.relax(relaxCoeff);
-
-
+            fvConstraints.constrain(sEqn);
             sEqn.solve(schemesField_);
+            fvConstraints.constrain(s_);
         }
     }
     else if (phi.dimensions() == dimVolume/dimTime)
@@ -179,9 +184,9 @@ bool Foam::functionObjects::passiveScalar::execute()
             );
 
             sEqn.relax(relaxCoeff);
-
-
+            fvConstraints.constrain(sEqn);  
             sEqn.solve(schemesField_);
+            fvConstraints.constrain(s_);
         }
     }
     else

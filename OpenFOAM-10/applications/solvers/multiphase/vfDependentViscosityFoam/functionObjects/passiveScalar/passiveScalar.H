@@ -8,6 +8,7 @@
 #include "viscosityModelC.H"
 #include "vfDependentViscosityTwoPhaseMixture.H"
 #include "runTimeSelectionTables.H"
+#include "writeLocalObjects.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
