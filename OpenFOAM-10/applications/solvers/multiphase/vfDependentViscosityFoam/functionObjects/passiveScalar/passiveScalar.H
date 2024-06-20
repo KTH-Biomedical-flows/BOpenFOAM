@@ -36,14 +36,17 @@ class passiveScalar
         //- Name of density field (optional)
         word rhoName_;
 
-	//- Dictionary holding the properties
-	dictionary dict_;
+        //- Dictionary holding the properties
+        dictionary dict_;
 
         //- Diffusion coefficient (optional)
         scalar D_;
 
-	//- Name of diffusion model
-	word diffusionModelName_;
+        //- Name of diffusion model
+        word diffusionModelName_;
+
+        //- Switch for MULES limited solution
+        bool MULES_;
 
         //- Flag to indicate whether a constant, uniform D_ is specified
         bool constantD_;
@@ -66,6 +69,19 @@ class passiveScalar
         //- The scalar field
         volScalarField s_;
 
+        //- Scalar volumetric flux
+        tmp<surfaceScalarField> tsPhi_;
+
+        //- MULES Correction
+        tmp<surfaceScalarField> tsPhiCorr0_;
+
+        //- Switch to indicate that s has been restarted for Crank-Nicolson
+        bool sRestart_;
+
+        //- Stabilisation for normalisation of the interface normal
+        //  needed if a compressive convection scheme is used
+        const dimensionedScalar deltaN_;
+
 
 
     // Private Member Functions
@@ -76,6 +92,10 @@ class passiveScalar
 
         //- Disallow default bitwise assignment
         void operator=(const passiveScalar&);
+
+        void subCycleMULES(Foam::autoPtr<Foam::diffusionModel>);
+        void solveMULES();
+
 
 
 public:
